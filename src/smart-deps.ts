@@ -71,7 +71,7 @@ export function installAllDependencies(root: string) {
     terminal.sendText("npm install");
 }
 
-export function setWatchers(doc: vscode.TextDocument) {
+export function setupWatchers(doc: vscode.TextDocument) {
     if (openedPackages.has(doc.uri.fsPath)) return;
 
     const packageLockDir = path.join(path.dirname(doc.uri.fsPath), "package-lock.json");

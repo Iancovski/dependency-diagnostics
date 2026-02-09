@@ -46,7 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.onDidChangeActiveTextEditor((editor) => {
             if (editor && isPackageJson(editor.document)) {
                 smartDeps.validateDependencies(editor.document);
-                smartDeps.setWatchers(editor.document);
+                smartDeps.setupWatchers(editor.document);
             }
         }),
     );
@@ -79,12 +79,12 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Validate already open package.json
 
-    vscode.workspace.textDocuments.forEach((doc) => {
-        if (isPackageJson(doc)) {
-            smartDeps.validateDependencies(doc);
-            smartDeps.setWatchers(doc);
-        }
-    });
+    const document = vscode.window.activeTextEditor?.document;
+
+    if (document && isPackageJson(document)) {
+        smartDeps.validateDependencies(document);
+        smartDeps.setupWatchers(document);
+    }
 }
 
 function isPackageJson(doc: vscode.TextDocument) {
