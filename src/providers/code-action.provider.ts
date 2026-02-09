@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import path from "path";
 import { DependencyInfo } from "../interfaces/dependency.interface";
 
-export default class SmartDepsCodeActionProvider implements vscode.CodeActionProvider {
+export default class CodeActionProvider implements vscode.CodeActionProvider {
     provideCodeActions(document: vscode.TextDocument, _range: vscode.Range, context: vscode.CodeActionContext): vscode.CodeAction[] {
         const actions: vscode.CodeAction[] = [];
 

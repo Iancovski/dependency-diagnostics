@@ -1,23 +1,23 @@
 import * as vscode from "vscode";
-import * as smartDeps from "./smart-deps";
 import path from "path";
-import SmartDepsCodeActionProvider from "./providers/code-action.provider";
+import Validator from "./validator";
+import CodeActionProvider from "./providers/code-action.provider";
 import { DependencyInfo } from "./interfaces/dependency.interface";
-import { PackageValidator } from "./interfaces/package.interface";
+import { installAllDependencies, installDependency } from "./cmd";
 
-export const openedPackages = new Map<string, PackageValidator>();
+export const validators = new Map<string, Validator>();
 export const diagnostics = vscode.languages.createDiagnosticCollection("smartDeps");
 
 export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(diagnostics);
-    context.subscriptions.push({ dispose: () => smartDeps.disposePackageValidators() });
+    context.subscriptions.push({ dispose: () => disposeValidators() });
 
     /**************************************************/
     /******************** Providers *******************/
     /**************************************************/
 
     context.subscriptions.push(
-        vscode.languages.registerCodeActionsProvider({ language: "json", pattern: "**/package.json" }, new SmartDepsCodeActionProvider(), {
+        vscode.languages.registerCodeActionsProvider({ language: "json", pattern: "**/package.json" }, new CodeActionProvider(), {
             providedCodeActionKinds: [vscode.CodeActionKind.QuickFix],
         }),
     );
@@ -28,13 +28,13 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.commands.registerCommand("smartDeps.installDependency", (dep: DependencyInfo) => {
-            smartDeps.installDependency(dep);
+            installDependency(dep);
         }),
     );
 
     context.subscriptions.push(
         vscode.commands.registerCommand("smartDeps.installAllDependencies", (dep: DependencyInfo) => {
-            smartDeps.installAllDependencies(dep.packageRoot);
+            installAllDependencies(dep.packageRoot);
         }),
     );
 
@@ -43,10 +43,15 @@ export function activate(context: vscode.ExtensionContext) {
     /**************************************************/
 
     context.subscriptions.push(
-        vscode.window.onDidChangeActiveTextEditor((editor) => {
-            if (editor && isPackageJson(editor.document)) {
-                smartDeps.validateDependencies(editor.document);
-                smartDeps.setupWatchers(editor.document);
+        vscode.workspace.onDidOpenTextDocument((doc) => {
+            if (isPackageJson(doc)) {
+                let validator = validators.get(doc.uri.fsPath);
+
+                if (!validator) {
+                    validator = addValidator(doc);
+                }
+
+                validator.validateDependencies();
             }
         }),
     );
@@ -54,17 +59,13 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.workspace.onDidSaveTextDocument((doc) => {
             if (isPackageJson(doc)) {
-                smartDeps.validateDependencies(doc);
-            }
-        }),
-    );
+                let validator = validators.get(doc.uri.fsPath);
 
-    context.subscriptions.push(
-        vscode.window.onDidChangeVisibleTextEditors(() => {
-            for (const packagePath of openedPackages.keys()) {
-                if (!isPackageJsonVisible(packagePath)) {
-                    smartDeps.disposePackageValidator(packagePath);
+                if (!validator) {
+                    validator = addValidator(doc);
                 }
+
+                validator.validateDependencies();
             }
         }),
     );
@@ -72,27 +73,48 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.workspace.onDidCloseTextDocument((doc) => {
             if (isPackageJson(doc)) {
-                smartDeps.disposePackageValidator(doc.uri.fsPath);
+                removeValidator(doc.uri.fsPath);
             }
         }),
     );
 
-    // Validate already open package.json
-
-    const document = vscode.window.activeTextEditor?.document;
-
-    if (document && isPackageJson(document)) {
-        smartDeps.validateDependencies(document);
-        smartDeps.setupWatchers(document);
-    }
+    validateOpenedPackageJsonFiles();
 }
 
 function isPackageJson(doc: vscode.TextDocument) {
-    return path.basename(doc.uri.fsPath) === "package.json" && !doc.uri.fsPath.includes("node_modules");
+    return (
+        path.basename(doc.uri.fsPath) === "package.json" && !doc.uri.fsPath.includes("node_modules") && !doc.uri.fsPath.includes(".angular")
+    );
 }
 
-function isPackageJsonVisible(packagePath: string): boolean {
-    return vscode.window.visibleTextEditors.some((editor) => {
-        return editor.document.uri.fsPath === packagePath;
+function addValidator(doc: vscode.TextDocument) {
+    const validator = new Validator(doc);
+    validators.set(doc.uri.fsPath, validator);
+    return validator;
+}
+
+function removeValidator(packagePath: string) {
+    const validator = validators.get(packagePath);
+    validator?.dispose();
+    validators.delete(packagePath);
+}
+
+function validateOpenedPackageJsonFiles() {
+    const doc = vscode.window.activeTextEditor?.document;
+
+    if (doc && isPackageJson(doc)) {
+        let validator = validators.get(doc.uri.fsPath);
+
+        if (!validator) {
+            validator = addValidator(doc);
+        }
+
+        validator.validateDependencies();
+    }
+}
+
+function disposeValidators() {
+    validators.forEach((validator) => {
+        validator.dispose();
     });
 }
