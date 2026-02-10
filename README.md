@@ -7,10 +7,10 @@ If a dependency is missing or out of sync, SmartDeps highlights it and lets you 
 ## Demo
 
 - Highlights and message
-![Fix all](/assets/gifs/fix-all.gif)
+![Fix all](https://raw.githubusercontent.com/Iancovski/smart-deps/refs/heads/main/assets/gifs/fix-all.gif)
 
 - Quick fix
-![Quick fix](/assets/gifs/quick-fix.gif)
+![Quick fix](https://raw.githubusercontent.com/Iancovski/smart-deps/refs/heads/main/assets/gifs/quick-fix.gif)
 
 ---
 
