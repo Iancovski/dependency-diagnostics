@@ -3,7 +3,6 @@ import path from "path";
 import semver from "semver";
 import fs from "fs";
 import { diagnostics } from "./extension";
-import { installAllDependencies } from "./cmd";
 
 export default class Validator {
     private document: vscode.TextDocument;
@@ -11,18 +10,23 @@ export default class Validator {
     private nodeModulesWatcher: vscode.FileSystemWatcher;
     private revalidationTimer: NodeJS.Timeout | null = null;
 
+    public packageRoot: string;
+    public valid = true;
+
     constructor(doc: vscode.TextDocument) {
         this.document = doc;
+        this.packageRoot = path.dirname(doc.uri.fsPath);
 
-        const packageLockDir = new vscode.RelativePattern(path.dirname(doc.uri.fsPath), "package-lock.json");
+        const packageLockDir = new vscode.RelativePattern(path.dirname(doc.uri.fsPath), "node_modules/.package-lock.json");
         this.packageLockWatcher = vscode.workspace.createFileSystemWatcher(packageLockDir);
         this.packageLockWatcher.onDidCreate(() => this.revalidate());
         this.packageLockWatcher.onDidChange(() => this.revalidate());
-        this.packageLockWatcher.onDidDelete(() => this.revalidate());
 
         const nodeModulesDir = new vscode.RelativePattern(path.dirname(doc.uri.fsPath), "node_modules");
         this.nodeModulesWatcher = vscode.workspace.createFileSystemWatcher(nodeModulesDir);
         this.nodeModulesWatcher.onDidDelete(() => this.validateDependencies());
+
+        this.validateDependencies();
     }
 
     public dispose() {
@@ -43,6 +47,7 @@ export default class Validator {
     }
 
     public validateDependencies() {
+        this.valid = true;
         diagnostics.delete(this.document.uri);
 
         const dir = path.dirname(this.document.uri.fsPath);
@@ -77,18 +82,8 @@ export default class Validator {
         }
 
         if (diagnosticsList.length > 0) {
+            this.valid = false;
             diagnostics.set(this.document.uri, diagnosticsList);
-
-            const message =
-                diagnosticsList.length === 1
-                    ? "A dependency is missing or has an incorrect version."
-                    : `Some dependencies are missing or have incorrect versions.`;
-
-            vscode.window.showWarningMessage(message, "Fix all", "Dismiss").then((selection) => {
-                if (selection === "Fix all") {
-                    installAllDependencies(dir);
-                }
-            });
         }
     }
 
