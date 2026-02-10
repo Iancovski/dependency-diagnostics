@@ -91,8 +91,6 @@ export default class Validator {
         return {
             ...pkg.dependencies,
             ...pkg.devDependencies,
-            ...pkg.optionalDependencies,
-            ...pkg.peerDependencies,
         };
     }
 
