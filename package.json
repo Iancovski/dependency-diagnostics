@@ -4,6 +4,9 @@
     "description": "Keep your package.json and node_modules in sync",
     "version": "1.0.0",
     "icon": "./assets/icon.png",
+    "publisher": "Iancovski",
+    "homepage": "https://github.com/Iancovski/smart-deps",
+    "license": "MIT",
     "keywords": [
         "npm",
         "package.json",
@@ -16,6 +19,14 @@
         "monorepo",
         "workspace"
     ],
+    "author": {
+        "name": "Vinícius Iancovski",
+        "email": "iancovski.vinicius@gmail.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Iancovski/smart-deps.git"
+    },
     "engines": {
         "vscode": "^1.109.0"
     },
@@ -44,11 +55,11 @@
         "@vscode/test-cli": "^0.0.12",
         "@vscode/test-electron": "^2.5.2",
         "eslint": "^9.39.2",
+        "prettier": "^3.8.1",
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.54.0"
     },
     "dependencies": {
-        "prettier": "^3.8.1",
         "semver": "^7.7.4"
     }
 }
