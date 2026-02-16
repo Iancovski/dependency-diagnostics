@@ -1,11 +1,11 @@
 {
-    "name": "smart-deps",
-    "displayName": "SmartDeps",
-    "description": "Keep your package.json and node_modules in sync",
+    "name": "dependency-diagnostics",
+    "displayName": "Dependency Diagnostics",
+    "description": "Get diagnostics and quick fixes for dependencies that are missing or have incorrect versions.",
     "version": "1.0.0",
     "icon": "./assets/icon.png",
     "publisher": "Iancovski",
-    "homepage": "https://github.com/Iancovski/smart-deps",
+    "homepage": "https://github.com/Iancovski/dependency-diagnostics",
     "license": "MIT",
     "keywords": [
         "npm",
@@ -25,7 +25,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/Iancovski/smart-deps.git"
+        "url": "https://github.com/Iancovski/dependency-diagnostics.git"
     },
     "engines": {
         "vscode": "^1.109.0"

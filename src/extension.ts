@@ -3,9 +3,9 @@ import path from "path";
 import Validator from "./validator";
 import CodeActionProvider from "./providers/code-action.provider";
 import { DependencyInfo } from "./interfaces/dependency.interface";
-import { installAllDependencies, installDependency } from "./cmd";
+import { installDependencies } from "./cmd";
 
-export const diagnostics = vscode.languages.createDiagnosticCollection("smartDeps");
+export const diagnostics = vscode.languages.createDiagnosticCollection("dependency-diagnostics");
 export const packageWatcher = vscode.workspace.createFileSystemWatcher("**/package.json", false, true, false);
 export const validators = new Map<string, Validator>();
 
@@ -29,14 +29,8 @@ export async function activate(context: vscode.ExtensionContext) {
     /**************************************************/
 
     context.subscriptions.push(
-        vscode.commands.registerCommand("smartDeps.installDependency", (dep: DependencyInfo) => {
-            installDependency(dep);
-        }),
-    );
-
-    context.subscriptions.push(
-        vscode.commands.registerCommand("smartDeps.installAllDependencies", (dep: DependencyInfo) => {
-            installAllDependencies(dep.packageRoot);
+        vscode.commands.registerCommand("dependency-diagnostics.install-dependencies", (dep: DependencyInfo) => {
+            installDependencies(dep.packageRoot);
         }),
     );
 
@@ -49,6 +43,7 @@ export async function activate(context: vscode.ExtensionContext) {
             if (isValidPackageJson(doc.uri.fsPath)) {
                 let validator = validators.get(doc.uri.fsPath);
                 validator?.validateDependencies();
+                showNotification();
             }
         }),
     );
@@ -59,20 +54,19 @@ export async function activate(context: vscode.ExtensionContext) {
 
     setupPackageWatcher();
     await scanWorkspacePackages();
-
-    const invalidPackages = getInvalidPackages();
-    if (invalidPackages.length > 0) {
-        showFixSuggestion(invalidPackages);
-    }
+    showNotification();
 }
 
-function showFixSuggestion(packages: string[]) {
+export function showNotification() {
+    const invalidPackages = getInvalidPackages();
+    if (invalidPackages.length === 0) return;
+
     vscode.window
         .showWarningMessage("Some dependencies are missing or have incorrect versions.", "Fix all", "Dismiss")
         .then((selection) => {
             if (selection === "Fix all") {
-                for (const pkg of packages) {
-                    installAllDependencies(pkg);
+                for (const pkg of invalidPackages) {
+                    installDependencies(pkg);
                 }
             }
         });

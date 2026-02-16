@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import path from "path";
 import semver from "semver";
 import fs from "fs";
-import { diagnostics } from "./extension";
+import { diagnostics, showNotification } from "./extension";
 
 export default class Validator {
     private document: vscode.TextDocument;
@@ -17,14 +17,20 @@ export default class Validator {
         this.document = doc;
         this.packageRoot = path.dirname(doc.uri.fsPath);
 
-        const packageLockDir = new vscode.RelativePattern(path.dirname(doc.uri.fsPath), "node_modules/.package-lock.json");
+        const packageLockDir = new vscode.RelativePattern(path.dirname(doc.uri.fsPath), "node_modules/**");
         this.packageLockWatcher = vscode.workspace.createFileSystemWatcher(packageLockDir);
+
         this.packageLockWatcher.onDidCreate(() => this.revalidate());
         this.packageLockWatcher.onDidChange(() => this.revalidate());
+        this.packageLockWatcher.onDidDelete(() => this.revalidate());
 
         const nodeModulesDir = new vscode.RelativePattern(path.dirname(doc.uri.fsPath), "node_modules");
         this.nodeModulesWatcher = vscode.workspace.createFileSystemWatcher(nodeModulesDir);
-        this.nodeModulesWatcher.onDidDelete(() => this.validateDependencies());
+
+        this.nodeModulesWatcher.onDidDelete(() => {
+            this.validateDependencies();
+            showNotification();
+        });
 
         this.validateDependencies();
     }
@@ -74,7 +80,7 @@ export default class Validator {
                     installedVersion ? vscode.DiagnosticSeverity.Error : vscode.DiagnosticSeverity.Warning,
                 );
 
-                diagnostic.source = "smart-deps";
+                diagnostic.source = "dependency-diagnostics";
                 diagnostic.code = installedVersion ? "version-mismatch" : "not-installed";
 
                 diagnosticsList.push(diagnostic);

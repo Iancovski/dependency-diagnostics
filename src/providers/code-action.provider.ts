@@ -7,7 +7,10 @@ export default class CodeActionProvider implements vscode.CodeActionProvider {
         const actions: vscode.CodeAction[] = [];
 
         for (const diagnostic of context.diagnostics) {
-            if (diagnostic.source !== "smart-deps" || !(diagnostic.code === "not-installed" || diagnostic.code === "version-mismatch")) {
+            if (
+                diagnostic.source !== "dependency-diagnostics" ||
+                !(diagnostic.code === "not-installed" || diagnostic.code === "version-mismatch")
+            ) {
                 continue;
             }
 
@@ -15,7 +18,6 @@ export default class CodeActionProvider implements vscode.CodeActionProvider {
             if (!depInfo) continue;
 
             actions.push(createRunCommandAction(depInfo));
-            actions.push(diagnostic.code === "not-installed" ? createInstallAction(depInfo) : createUpdateAction(depInfo));
         }
 
         return actions;
@@ -26,32 +28,8 @@ function createRunCommandAction(dep: DependencyInfo) {
     const action = new vscode.CodeAction(`Run "npm install"`, vscode.CodeActionKind.QuickFix);
 
     action.command = {
-        command: "smartDeps.installAllDependencies",
+        command: "dependency-diagnostics.install-dependencies",
         title: "Install all dependencies",
-        arguments: [dep],
-    };
-
-    return action;
-}
-
-function createInstallAction(dep: DependencyInfo): vscode.CodeAction {
-    const action = new vscode.CodeAction(`Install ${dep.name}`, vscode.CodeActionKind.QuickFix);
-
-    action.command = {
-        command: "smartDeps.installDependency",
-        title: "Install dependency",
-        arguments: [dep],
-    };
-
-    return action;
-}
-
-function createUpdateAction(dep: DependencyInfo): vscode.CodeAction {
-    const action = new vscode.CodeAction(`Update ${dep.name} to ${dep.version}`, vscode.CodeActionKind.QuickFix);
-
-    action.command = {
-        command: "smartDeps.installDependency",
-        title: "Update dependency",
         arguments: [dep],
     };
 
