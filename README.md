@@ -4,12 +4,12 @@ Detect and fix missing or incorrect dependencies across all `package.json` files
 
 ## Demo
 
-### Fix all notification
-![Fix all](https://raw.githubusercontent.com/Iancovski/dependency-diagnostics/refs/heads/main/assets/gifs/notification.gif)
+### Fix all
+![Fix all](https://raw.githubusercontent.com/Iancovski/dependency-diagnostics/refs/heads/main/assets/gifs/fix-all.gif)
 
 
 ### Diagnostics and Quick Fixes
-![Highlights and notification](https://raw.githubusercontent.com/Iancovski/dependency-diagnostics/refs/heads/main/assets/gifs/diagnostics.gif)
+![Diagnostics and Quick Fixes](https://raw.githubusercontent.com/Iancovski/dependency-diagnostics/refs/heads/main/assets/gifs/quick-fix.gif)
 
 ---
 

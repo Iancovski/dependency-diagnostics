@@ -6,8 +6,9 @@ import { diagnostics, showNotification } from "./extension";
 
 export default class Validator {
     private document: vscode.TextDocument;
-    private packageLockWatcher: vscode.FileSystemWatcher;
+    private nodeModulesPackagesWatcher: vscode.FileSystemWatcher;
     private nodeModulesWatcher: vscode.FileSystemWatcher;
+    private nodeModulesContentWatcher: vscode.FileSystemWatcher;
     private revalidationTimer: NodeJS.Timeout | null = null;
 
     public packageRoot: string;
@@ -17,26 +18,37 @@ export default class Validator {
         this.document = doc;
         this.packageRoot = path.dirname(doc.uri.fsPath);
 
-        const packageLockDir = new vscode.RelativePattern(path.dirname(doc.uri.fsPath), "node_modules/**");
-        this.packageLockWatcher = vscode.workspace.createFileSystemWatcher(packageLockDir);
+        const nodeModulesPackagesDir = new vscode.RelativePattern(path.dirname(doc.uri.fsPath), "node_modules/**/package.json");
+        this.nodeModulesPackagesWatcher = vscode.workspace.createFileSystemWatcher(nodeModulesPackagesDir, false, false, true);
+        this.nodeModulesPackagesWatcher.onDidCreate(() => {
+            // console.log("Dependency Diagnostics | Watchers | node_modules/**/package.json - onDidCreate");
+            this.revalidate();
+        });
+        this.nodeModulesPackagesWatcher.onDidChange(() => {
+            // console.log("Dependency Diagnostics | Watchers | node_modules/**/package.json - onDidChange");
+            this.revalidate();
+        });
 
-        this.packageLockWatcher.onDidCreate(() => this.revalidate());
-        this.packageLockWatcher.onDidChange(() => this.revalidate());
-        this.packageLockWatcher.onDidDelete(() => this.revalidate());
+        const nodeModulesContentDir = new vscode.RelativePattern(path.dirname(doc.uri.fsPath), "node_modules/**");
+        this.nodeModulesContentWatcher = vscode.workspace.createFileSystemWatcher(nodeModulesContentDir, true, true, false);
+        this.nodeModulesContentWatcher.onDidDelete(() => {
+            // console.log("Dependency Diagnostics | Watchers | node_modules/** - onDidDelete");
+            this.revalidate(true);
+        });
 
         const nodeModulesDir = new vscode.RelativePattern(path.dirname(doc.uri.fsPath), "node_modules");
-        this.nodeModulesWatcher = vscode.workspace.createFileSystemWatcher(nodeModulesDir);
-
+        this.nodeModulesWatcher = vscode.workspace.createFileSystemWatcher(nodeModulesDir, true, true, false);
         this.nodeModulesWatcher.onDidDelete(() => {
-            this.validateDependencies();
-            showNotification();
+            // console.log("Dependency Diagnostics | Watchers | node_modules - onDidDelete");
+            this.revalidate(true);
         });
 
         this.validateDependencies();
     }
 
     public dispose() {
-        this.packageLockWatcher.dispose();
+        this.nodeModulesPackagesWatcher.dispose();
+        this.nodeModulesContentWatcher.dispose();
         this.nodeModulesWatcher.dispose();
 
         if (this.revalidationTimer) {
@@ -44,11 +56,14 @@ export default class Validator {
         }
     }
 
-    private revalidate() {
+    private revalidate(notify: boolean = false) {
         if (this.revalidationTimer) clearTimeout(this.revalidationTimer);
 
         this.revalidationTimer = setTimeout(() => {
             this.validateDependencies();
+            if (notify) {
+                showNotification();
+            }
         }, 1000);
     }
 
