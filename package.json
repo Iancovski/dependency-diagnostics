@@ -1,7 +1,7 @@
 {
     "name": "dependency-diagnostics",
     "displayName": "Dependency Diagnostics",
-    "description": "Get diagnostics and quick fixes for dependencies that are missing or have incorrect versions.",
+    "description": "Detect and fix missing or incorrect dependencies across all `package.json` files in your workspace.",
     "version": "1.0.0",
     "icon": "./assets/icon.png",
     "publisher": "Iancovski",

@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import path from "path";
 import { DependencyInfo, DependencyScope } from "../interfaces/dependency.interface";
+import { detectPackageManager } from "../extension";
 
 export default class CodeActionProvider implements vscode.CodeActionProvider {
     provideCodeActions(document: vscode.TextDocument, _range: vscode.Range, context: vscode.CodeActionContext): vscode.CodeAction[] {
@@ -25,7 +26,8 @@ export default class CodeActionProvider implements vscode.CodeActionProvider {
 }
 
 function createRunCommandAction(dep: DependencyInfo) {
-    const action = new vscode.CodeAction(`Run "npm install"`, vscode.CodeActionKind.QuickFix);
+    const packageManager = detectPackageManager(dep.packageRoot);
+    const action = new vscode.CodeAction(`Run "${packageManager} install"`, vscode.CodeActionKind.QuickFix);
 
     action.command = {
         command: "dependency-diagnostics.install-dependencies",

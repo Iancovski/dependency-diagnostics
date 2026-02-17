@@ -1,23 +1,16 @@
 # Dependency Diagnostics
 
-Detect and fix missing or incorrect dependencies across all `package.json` files in your workspace.
+**Dependency Diagnostics** is a Visual Studio Code extension that automatically checks whether the dependencies declared in all `package.json` files in your workspace are installed and match the expected versions, making it suitable for monorepos and multi-package repositories.
+
+If a dependency is missing or out of sync, Dependency Diagnostics highlights it and lets you fix the issue quickly.
 
 ## Demo
 
 ### Fix all
 ![Fix all](https://raw.githubusercontent.com/Iancovski/dependency-diagnostics/refs/heads/main/assets/gifs/fix-all.gif)
 
-
 ### Diagnostics and Quick Fixes
 ![Diagnostics and Quick Fixes](https://raw.githubusercontent.com/Iancovski/dependency-diagnostics/refs/heads/main/assets/gifs/quick-fix.gif)
-
----
-
-## Description
-
-**Dependency Diagnostics** is a Visual Studio Code extension that automatically checks whether the dependencies declared in all `package.json` files in your workspace are installed and match the expected versions, making it suitable for monorepos and multi-package repositories.
-
-If a dependency is missing or out of sync, Dependency Diagnostics highlights it and lets you fix the issue quickly.
 
 ## Features
 
@@ -27,16 +20,20 @@ If a dependency is missing or out of sync, Dependency Diagnostics highlights it 
 * Shows a notification to install all dependencies
 * Provides diagnostics and quick fixes to install dependencies
 
----
+## Supported Package Managers
+
+Dependency Diagnostics automatically detects the following package managers for installing dependencies:
+
+* `npm`
+* `yarn`
+* `pnpm`
 
 ## Supported Dependency Types
 
-Dependency Diagnostics checks:
+The extension checks the following sections of package.json:
 
-* dependencies
-* devDependencies
-
----
+* `dependencies`
+* `devDependencies`
 
 ## Ignored Locations
 
@@ -44,15 +41,6 @@ To avoid false positives and unnecessary processing, Dependency Diagnostics igno
 
 * `node_modules`
 * `.angular`
-
----
-
-## Roadmap (Planned)
-
-* Configuration for ignored folders
-* Support for `yarn` and `pnpm`
-
----
 
 ## Contributing
 

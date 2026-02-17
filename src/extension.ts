@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import path from "path";
+import fs from "fs";
 import Validator from "./validator";
 import CodeActionProvider from "./providers/code-action.provider";
 import { DependencyInfo } from "./interfaces/dependency.interface";
@@ -70,6 +71,13 @@ export function showNotification() {
                 }
             }
         });
+}
+
+export function detectPackageManager(root: string): "npm" | "yarn" | "pnpm" {
+    if (fs.existsSync(path.join(root, "package-lock.json"))) return "npm";
+    if (fs.existsSync(path.join(root, "pnpm-lock.yaml"))) return "pnpm";
+    if (fs.existsSync(path.join(root, "yarn.lock"))) return "yarn";
+    return "npm";
 }
 
 function getInvalidPackages() {
