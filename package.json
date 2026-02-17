@@ -9,8 +9,11 @@
     "license": "MIT",
     "keywords": [
         "npm",
+        "yarn",
+        "pnpm",
         "package.json",
         "dependencies",
+        "diagnostics",
         "dependency checker",
         "missing dependencies",
         "version mismatch",
