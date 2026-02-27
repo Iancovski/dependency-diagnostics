@@ -47,6 +47,8 @@ export default class Validator {
     }
 
     public dispose() {
+        diagnostics.delete(this.document.uri);
+
         this.nodeModulesPackagesWatcher.dispose();
         this.nodeModulesContentWatcher.dispose();
         this.nodeModulesWatcher.dispose();

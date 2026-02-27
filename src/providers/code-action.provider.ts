@@ -30,7 +30,7 @@ function createRunCommandAction(dep: DependencyInfo) {
     const action = new vscode.CodeAction(`Run "${packageManager} install"`, vscode.CodeActionKind.QuickFix);
 
     action.command = {
-        command: "dependency-diagnostics.install-dependencies",
+        command: "dependencyDiagnostics.installDependencies",
         title: "Install all dependencies",
         arguments: [dep],
     };

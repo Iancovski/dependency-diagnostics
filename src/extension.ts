@@ -5,10 +5,13 @@ import Validator from "./validator";
 import CodeActionProvider from "./providers/code-action.provider";
 import { DependencyInfo } from "./interfaces/dependency.interface";
 import { installDependencies } from "./cmd";
+import { minimatch } from "minimatch";
 
 export const diagnostics = vscode.languages.createDiagnosticCollection("dependency-diagnostics");
 export const packageWatcher = vscode.workspace.createFileSystemWatcher("**/package.json", false, true, false);
 export const validators = new Map<string, Validator>();
+
+let ignoredDirectories = getIgnoredDirectories();
 
 export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(diagnostics);
@@ -30,7 +33,7 @@ export async function activate(context: vscode.ExtensionContext) {
     /**************************************************/
 
     context.subscriptions.push(
-        vscode.commands.registerCommand("dependency-diagnostics.install-dependencies", (dep: DependencyInfo) => {
+        vscode.commands.registerCommand("dependencyDiagnostics.installDependencies", (dep: DependencyInfo) => {
             installDependencies(dep.packageRoot);
         }),
     );
@@ -41,10 +44,20 @@ export async function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
         vscode.workspace.onDidSaveTextDocument((doc) => {
-            if (isValidPackageJson(doc.uri.fsPath)) {
+            if (isValidPackageJson(doc.uri)) {
                 let validator = validators.get(doc.uri.fsPath);
                 validator?.validateDependencies();
                 showNotification();
+            }
+        }),
+    );
+
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration((event) => {
+            if (event.affectsConfiguration("dependencyDiagnostics.ignoredDirectories")) {
+                ignoredDirectories = getIgnoredDirectories();
+                disposeValidators();
+                scanWorkspacePackages();
             }
         }),
     );
@@ -55,7 +68,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
     setupPackageWatcher();
     await scanWorkspacePackages();
-    showNotification();
 }
 
 export function showNotification() {
@@ -63,12 +75,14 @@ export function showNotification() {
     if (invalidPackages.length === 0) return;
 
     vscode.window
-        .showWarningMessage("Some dependencies are missing or have incorrect versions.", "Fix all", "Dismiss")
+        .showWarningMessage("Some dependencies are missing or have incorrect versions.", "Fix all", "Settings", "Dismiss")
         .then((selection) => {
             if (selection === "Fix all") {
                 for (const pkg of invalidPackages) {
                     installDependencies(pkg);
                 }
+            } else if (selection === "Settings") {
+                vscode.commands.executeCommand("workbench.action.openSettings", "@ext:iancovski.dependency-diagnostics");
             }
         });
 }
@@ -94,30 +108,53 @@ function getInvalidPackages() {
 
 function setupPackageWatcher() {
     packageWatcher.onDidCreate(async (uri) => {
-        if (!isValidPackageJson(uri.fsPath)) return;
+        if (!isValidPackageJson(uri)) return;
 
         const doc = await vscode.workspace.openTextDocument(uri);
         addValidator(doc);
     });
 
     packageWatcher.onDidDelete((uri) => {
-        if (!isValidPackageJson(uri.fsPath)) return;
+        if (!isValidPackageJson(uri)) return;
 
         removeValidator(uri.fsPath);
     });
 }
 
 async function scanWorkspacePackages() {
-    const packageJsonFiles = await vscode.workspace.findFiles("**/package.json", "{**/node_modules/**,**/.angular/**}");
+    const excludedDirectories = ignoredDirectories.length ? `{${ignoredDirectories.join(",")}}` : ignoredDirectories[0];
+    const packageJsonFiles = await vscode.workspace.findFiles("**/package.json", excludedDirectories);
 
     for (const uri of packageJsonFiles) {
         const doc = await vscode.workspace.openTextDocument(uri);
         addValidator(doc);
     }
+
+    showNotification();
 }
 
-function isValidPackageJson(packagePath: string) {
-    return path.basename(packagePath) === "package.json" && !packagePath.includes("node_modules") && !packagePath.includes(".angular");
+function getIgnoredDirectories() {
+    const ignoredDirectories = ["**/node_modules/**"];
+    const ignoredDirectoriesConfig = vscode.workspace.getConfiguration("dependencyDiagnostics").get<string[]>("ignoredDirectories");
+
+    if (ignoredDirectoriesConfig) {
+        ignoredDirectories.push(...ignoredDirectoriesConfig);
+    }
+
+    return ignoredDirectories;
+}
+
+function isValidPackageJson(uri: vscode.Uri) {
+    return path.basename(uri.fsPath) === "package.json" && !isDirectoryIgnored(uri);
+}
+
+function isDirectoryIgnored(uri: vscode.Uri) {
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri);
+
+    if (!workspaceFolder) return false;
+
+    const normalizedPath = path.relative(workspaceFolder.uri.fsPath, uri.fsPath).replace(/\\/g, "/");
+    return ignoredDirectories.some((pattern) => minimatch(normalizedPath, pattern, { dot: true }));
 }
 
 function addValidator(doc: vscode.TextDocument) {
@@ -130,13 +167,14 @@ function addValidator(doc: vscode.TextDocument) {
 function removeValidator(packagePath: string) {
     const validator = validators.get(packagePath);
     validator?.dispose();
-    validators.delete(packagePath);
 
-    diagnostics.delete(vscode.Uri.file(packagePath));
+    validators.delete(packagePath);
 }
 
 function disposeValidators() {
     validators.forEach((validator) => {
         validator.dispose();
     });
+
+    validators.clear();
 }

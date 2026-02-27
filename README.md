@@ -20,6 +20,23 @@ If a dependency is missing or out of sync, Dependency Diagnostics highlights it 
 * Shows a notification to install all dependencies
 * Provides diagnostics and quick fixes to install dependencies
 
+## Settings
+
+This extension contributes the following settings:
+
+### `dependencyDiagnostics.ignoredDirectories`
+
+Ignores `package.json` files inside directories that match the configured glob patterns. `node_modules` directories are ignored by default (no configuration needed).
+
+```json
+{
+    "dependencyDiagnostics.ignoredDirectories": [
+        "**/.angular/**",
+        "client/**"
+    ]
+}
+```
+
 ## Supported Package Managers
 
 Dependency Diagnostics automatically detects the following package managers for installing dependencies:
